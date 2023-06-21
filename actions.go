@@ -15,46 +15,46 @@ func aKill(s *State, w *Wyrm, n *Neuron) float64 {
 
 // set neuron responsiveness
 func aResp(s *State, w *Wyrm, n *Neuron) float64 {
-	n.tanhActivate()
-	if sgn, ok := activate(n); ok {
+	p := tanhActivation(s, w, n)
+	if sgn, ok := activate(p); ok {
 		n.responsiveness *= 0.1 * sgn
 	}
-	return 0
+	return p
 }
 
 // move forward/backward (in direction wyrm is facing)
 func aMoveF(s *State, w *Wyrm, n *Neuron) float64 {
-	n.tanhActivate()
-	if sgn, ok := activate(n); ok {
+	p := tanhActivation(s, w, n)
+	if sgn, ok := activate(p); ok {
 		ds := Dist(sgn)
 		move(s, w, Direction{w.direction[0] * ds, w.direction[1] * ds})
 	}
-	return 0
+	return p
 }
 
 // move east/west
 func aMoveEW(s *State, w *Wyrm, n *Neuron) float64 {
-	n.tanhActivate()
-	if sgn, ok := activate(n); ok {
+	p := tanhActivation(s, w, n)
+	if sgn, ok := activate(p); ok {
 		w.direction[0] = Dist(sgn)
 		move(s, w, w.direction)
 	}
-	return 0
+	return p
 }
 
 // move north/south
 func aMoveNS(s *State, w *Wyrm, n *Neuron) float64 {
-	n.tanhActivate()
-	if sgn, ok := activate(n); ok {
+	p := tanhActivation(s, w, n)
+	if sgn, ok := activate(p); ok {
 		w.direction[1] = Dist(sgn)
 		move(s, w, w.direction)
 	}
-	return 0
+	return p
 }
 
-func activate(n *Neuron) (float64, bool) {
-	ok := rand.Float64() <= math.Abs(n.potential)
-	if n.potential >= _eps {
+func activate(p float64) (float64, bool) {
+	ok := rand.Float64() <= math.Abs(p)
+	if p >= _eps {
 		return 1, ok
 	}
 	return -1, ok
@@ -62,18 +62,16 @@ func activate(n *Neuron) (float64, bool) {
 }
 
 func move(s *State, w *Wyrm, d Direction) {
-	w.x += d[0]
-	w.y += d[1]
-	if w.x < 0 {
-		w.x = 0
+	x1 := w.x + d[0]
+	y1 := w.y + d[1]
+	if s.world[x1][y1] != nil {
+		return
 	}
-	if w.x >= s.sizeX {
-		w.x = s.sizeX - 1
+	if x1 < 0 || y1 < 0 || x1 >= s.sizeX || y1 >= s.sizeY {
+		return
 	}
-	if w.y < 0 {
-		w.y = 0
-	}
-	if w.y >= s.sizeY {
-		w.y = s.sizeY - 1
-	}
+	s.world[w.x][w.y] = nil
+	w.x = x1
+	w.y = y1
+	s.world[w.x][w.y] = w
 }

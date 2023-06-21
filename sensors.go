@@ -5,17 +5,17 @@ import (
 )
 
 // wyrm age
-func sAge(s *State, w *Wyrm, n *Neuron) float64 {
+func sAge(s *State, w *Wyrm, _ *Neuron) float64 {
 	return float64(w.age) / float64(s.maxAge)
 }
 
 // random
-func sRand(s *State, w *Wyrm, n *Neuron) float64 {
+func sRand(s *State, w *Wyrm, _ *Neuron) float64 {
 	return rand.Float64()
 }
 
 // population density nearby. 1 is max density
-func sPop(s *State, w *Wyrm, n *Neuron) float64 {
+func sPop(s *State, w *Wyrm, _ *Neuron) float64 {
 	c := 0
 	for x := Dist(-1); x <= 1; x++ {
 		x0 := w.x + x
@@ -36,19 +36,19 @@ func sPop(s *State, w *Wyrm, n *Neuron) float64 {
 }
 
 // distance to nearest wyrm
-func sDistN(s *State, w *Wyrm, n *Neuron) float64 {
+func sDistN(s *State, w *Wyrm, _ *Neuron) float64 {
 	d, _ := findNearest(s, w)
 	return float64(d) / float64(s.maxDist)
 }
 
 // direction of nearest wyrm.
-func sDirN(s *State, w *Wyrm, n *Neuron) float64 {
+func sDirN(s *State, w *Wyrm, _ *Neuron) float64 {
 	_, d := findNearest(s, w)
 	return d.normalize()
 }
 
 // distance to nearest wyrm in forward direction. 0 - no wyrm, 1 - wyrm in next cell
-func sDistF(s *State, w *Wyrm, n *Neuron) float64 {
+func sDistF(s *State, w *Wyrm, _ *Neuron) float64 {
 	for t := Dist(1); t <= s.maxDist; t++ {
 		x := w.x + t*w.direction[0]
 		y := w.y + t*w.direction[1]
@@ -63,17 +63,17 @@ func sDistF(s *State, w *Wyrm, n *Neuron) float64 {
 }
 
 // oscillator
-func sOsc(s *State, w *Wyrm, n *Neuron) float64 {
+func sOsc(s *State, w *Wyrm, _ *Neuron) float64 {
 	return s.oscValue
 }
 
 // latitude (0 is north, 1 is south)
-func sLat(s *State, w *Wyrm, n *Neuron) float64 {
+func sLat(s *State, w *Wyrm, _ *Neuron) float64 {
 	return float64(w.y) / float64(s.sizeY-1)
 }
 
 // longitude (0 is west, 1 is east)
-func sLon(s *State, w *Wyrm, n *Neuron) float64 {
+func sLon(s *State, w *Wyrm, _ *Neuron) float64 {
 	return float64(w.x) / float64(s.sizeX-1)
 }
 

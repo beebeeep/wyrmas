@@ -1,7 +1,5 @@
 package main
 
-import "math"
-
 var (
 	_dirE  = Direction{1, 0}
 	_dirNE = Direction{1, -1}
@@ -15,32 +13,10 @@ var (
 
 type Dist int8
 type Direction [2]Dist
-
 type activationFn func(s *State, w *Wyrm, n *Neuron) float64
 
-type Wyrm struct {
-	x, y       Dist
-	age        int
-	direction  Direction
-	sensors    []Neuron
-	innerLayer []Neuron
-	actions    []Neuron
-}
-
-type Link struct {
-	weight float64
-	source *Neuron
-}
-
-type Neuron struct {
-	potential      float64
-	responsiveness float64
-	activate       activationFn
-	inputs         []Link
-}
-
 func (d Direction) normalize() float64 {
-	var s float64 = 1.0 / 7.0
+	var s = 1.0 / 7.0
 	switch d {
 	case _dirE:
 		return 0
@@ -61,13 +37,4 @@ func (d Direction) normalize() float64 {
 	default:
 		return 0
 	}
-}
-
-func (n *Neuron) tanhActivate() {
-	var sum float64
-	for _, l := range n.inputs {
-		sum += l.source.potential * l.weight
-	}
-	n.potential = math.Tanh(n.responsiveness * sum)
-
 }
