@@ -1,28 +1,30 @@
 package main
 
 import (
-	"math"
 	"math/rand"
 )
 
 // wyrm age
-func sAge(s *State, w *Wyrm, n *Neuron) float32 {
-	return float32(w.age) / _maxAge
+func sAge(s *State, w *Wyrm, n *Neuron) float64 {
+	return float64(w.age) / float64(s.maxAge)
 }
 
 // random
-func sRand(s *State, w *Wyrm, n *Neuron) float32 {
-	return rand.Float32()
+func sRand(s *State, w *Wyrm, n *Neuron) float64 {
+	return rand.Float64()
 }
 
 // population density nearby. 1 is max density
-func sPop(s *State, w *Wyrm, n *Neuron) float32 {
+func sPop(s *State, w *Wyrm, n *Neuron) float64 {
 	c := 0
-	for x := -1; x <= 1; x++ {
-		for y := -1; y <= 1; y++ {
-			x0 := w.x + x
+	for x := Dist(-1); x <= 1; x++ {
+		x0 := w.x + x
+		if x0 < 0 || x0 >= s.sizeX {
+			continue
+		}
+		for y := Dist(-1); y <= 1; y++ {
 			y0 := w.y + y
-			if x == 0 || y == 0 || x0 < 0 || x0 >= s.sizeX || y0 < 0 || y0 >= s.sizeX {
+			if (x == 0 && y == 0) || y0 < 0 || y0 >= s.sizeX {
 				continue
 			}
 			if s.world[x0][y0] != nil {
@@ -30,37 +32,68 @@ func sPop(s *State, w *Wyrm, n *Neuron) float32 {
 			}
 		}
 	}
-	return float32(c) / 8.0
+	return float64(c) / 8.0
 }
 
 // distance to nearest wyrm
-func sDistN(s *State, w *Wyrm, n *Neuron) float32 {
-	// implement me
+func sDistN(s *State, w *Wyrm, n *Neuron) float64 {
+	d, _ := findNearest(s, w)
+	return float64(d) / float64(s.maxDist)
 }
 
-// direction of nearest wyrm. 0 is east, 0.25 is north, 0.5 is west, 0.75 is south
-func sDirN(s *State, w *Wyrm, n *Neuron) float32 {
-	// implement me
+// direction of nearest wyrm.
+func sDirN(s *State, w *Wyrm, n *Neuron) float64 {
+	_, d := findNearest(s, w)
+	return d.normalize()
 }
 
 // distance to nearest wyrm in forward direction. 0 - no wyrm, 1 - wyrm in next cell
-func sDistF(s *State, w *Wyrm, n *Neuron) float32 {
-	// implement me
+func sDistF(s *State, w *Wyrm, n *Neuron) float64 {
+	for t := Dist(1); t <= s.maxDist; t++ {
+		x := w.x + t*w.direction[0]
+		y := w.y + t*w.direction[1]
+		if x >= s.sizeX || x < 0 || y >= s.sizeY || y < 0 {
+			return 0
+		}
+		if s.world[x][y] != nil {
+			return float64(t) / float64(s.maxDist)
+		}
+	}
+	return 0
 }
 
 // oscillator
-func sOsc(s *State, w *Wyrm, n *Neuron) float32 {
-	return 0.5 + float32(math.Cos(
-		2.0*math.Pi*float64(s.tick%_oscPeriod)/float64(_oscPeriod),
-	))/2.0
+func sOsc(s *State, w *Wyrm, n *Neuron) float64 {
+	return s.oscValue
 }
 
 // latitude (0 is north, 1 is south)
-func sLat(s *State, w *Wyrm, n *Neuron) float32 {
-	return float32(w.y) / float32(s.sizeY-1)
+func sLat(s *State, w *Wyrm, n *Neuron) float64 {
+	return float64(w.y) / float64(s.sizeY-1)
 }
 
 // longitude (0 is west, 1 is east)
-func sLon(s *State, w *Wyrm, n *Neuron) float32 {
-	return float32(w.x) / float32(s.sizeX-1)
+func sLon(s *State, w *Wyrm, n *Neuron) float64 {
+	return float64(w.x) / float64(s.sizeX-1)
+}
+
+func findNearest(s *State, w *Wyrm) (Dist, Direction) {
+	for t := Dist(1); t <= s.maxDist; t++ {
+		for dx := Dist(-1); dx <= 1; dx++ {
+			x := w.x + t*dx
+			if x >= s.sizeX || x < 0 {
+				continue
+			}
+			for dy := Dist(-1); dx <= 1; dx++ {
+				y := w.y + t*dy
+				if (dx == 0 && dy == 0) || y >= s.sizeY || y < 0 {
+					continue
+				}
+				if s.world[x][y] != nil {
+					return t, Direction{dx, dy}
+				}
+			}
+		}
+	}
+	return 0, _dirE
 }
