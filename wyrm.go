@@ -9,8 +9,10 @@ var (
 
 type Wyrm struct {
 	x, y        Dist
-	age         int
 	direction   Direction
+	age         int
+	dead        bool
+	genome      []Gene
 	sensorLayer []*Neuron
 	innerLayer  []*Neuron
 	actionLayer []*Neuron

@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+)
 
 // Gene only encodes wyrm's nn connections
 // Connection is encoded as follows:
@@ -10,6 +13,7 @@ import "fmt"
 // └─> src type    └─> sink type
 // src or sink type of 1 means inner layer neuron
 // 16 bit weight is normalized as float in range  (-4, 4]
+// note: endiannes does not matter here
 type Gene uint32
 
 func (g Gene) getSrc() (isInner bool, id byte) {
@@ -25,4 +29,20 @@ func (g Gene) getWeight() float64 {
 
 func (g Gene) String() string {
 	return fmt.Sprintf("%x", uint32(g))
+}
+
+func mixGenomes(a, b []Gene) []Gene {
+	v := [2][]Gene{a, b}
+	r := make([]Gene, len(a))
+	for i, idx := range rand.Perm(len(a)) {
+		r[i] = v[i%2][idx]
+	}
+	return r
+}
+
+func (g *Gene) mutate() {
+	// flip from 1 to 3 random bits
+	for i := 0; i <= rand.Intn(3); i++ {
+		*g = *g ^ (1 << rand.Intn(32))
+	}
 }
