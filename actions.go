@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 )
@@ -9,12 +10,12 @@ var (
 	_eps = 1e-3
 )
 
-func aKill(s *State, w *Wyrm, n *Neuron) float64 {
+func aKill(s *Simulation, w *Wyrm, n *Neuron) float64 {
 	return 0 // thou shalt not kill
 }
 
 // set neuron responsiveness
-func aResp(s *State, w *Wyrm, n *Neuron) float64 {
+func aResp(s *Simulation, w *Wyrm, n *Neuron) float64 {
 	p := tanhActivation(s, w, n)
 	if sgn, ok := activate(p); ok {
 		n.responsiveness *= 0.1 * sgn
@@ -23,7 +24,7 @@ func aResp(s *State, w *Wyrm, n *Neuron) float64 {
 }
 
 // move forward/backward (in direction wyrm is facing)
-func aMoveF(s *State, w *Wyrm, n *Neuron) float64 {
+func aMoveF(s *Simulation, w *Wyrm, n *Neuron) float64 {
 	p := tanhActivation(s, w, n)
 	if sgn, ok := activate(p); ok {
 		ds := Dist(sgn)
@@ -33,7 +34,7 @@ func aMoveF(s *State, w *Wyrm, n *Neuron) float64 {
 }
 
 // move east/west
-func aMoveEW(s *State, w *Wyrm, n *Neuron) float64 {
+func aMoveEW(s *Simulation, w *Wyrm, n *Neuron) float64 {
 	p := tanhActivation(s, w, n)
 	if sgn, ok := activate(p); ok {
 		w.direction[0] = Dist(sgn)
@@ -43,7 +44,7 @@ func aMoveEW(s *State, w *Wyrm, n *Neuron) float64 {
 }
 
 // move north/south
-func aMoveNS(s *State, w *Wyrm, n *Neuron) float64 {
+func aMoveNS(s *Simulation, w *Wyrm, n *Neuron) float64 {
 	p := tanhActivation(s, w, n)
 	if sgn, ok := activate(p); ok {
 		w.direction[1] = Dist(sgn)
@@ -61,17 +62,19 @@ func activate(p float64) (float64, bool) {
 
 }
 
-func move(s *State, w *Wyrm, d Direction) {
+func move(s *Simulation, w *Wyrm, d Direction) {
 	x1 := w.x + d[0]
 	y1 := w.y + d[1]
-	if s.world[x1][y1] != nil {
-		return
-	}
 	if x1 < 0 || y1 < 0 || x1 >= s.sizeX || y1 >= s.sizeY {
 		return
 	}
+	if s.world[x1][y1] != nil {
+		return
+	}
+
 	s.world[w.x][w.y] = nil
 	w.x = x1
 	w.y = y1
 	s.world[w.x][w.y] = w
+	fmt.Println("move")
 }

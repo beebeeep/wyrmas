@@ -5,7 +5,7 @@ import (
 	"math/rand"
 )
 
-type State struct {
+type Simulation struct {
 	sizeX, sizeY        Dist
 	maxDist             Dist // max distance wyrm can see
 	oscPeriod           int
@@ -18,7 +18,7 @@ type State struct {
 	world               [][]*Wyrm // x, y -> wyrm
 }
 
-func (s *State) simulationStep() {
+func (s *Simulation) simulationStep() {
 	s.tick++
 	s.oscValue = 0.5 + 0.5*math.Cos(
 		2.0*math.Pi*float64(s.tick%s.oscPeriod)/float64(s.oscPeriod),
@@ -36,7 +36,7 @@ func (s *State) simulationStep() {
 	}
 }
 
-func (s *State) selectionEastSide() {
+func (s *Simulation) selectionEastSide() {
 	// leave only those who ended up near the eastern border
 	for x := Dist(0); x <= s.sizeX*3/4; x++ {
 		for y := Dist(0); y < s.sizeY; y++ {
@@ -45,7 +45,33 @@ func (s *State) selectionEastSide() {
 	}
 }
 
-func (s *State) repopulate(targetPopulation int) {
+func (s *Simulation) randomizePopulation(targetPopulation, genomeLen int) {
+	for x := range s.world {
+		for y := range s.world[x] {
+			s.world[x][y] = nil
+		}
+	}
+	s.wyrmas = make([]Wyrm, targetPopulation)
+	for i := range s.wyrmas {
+		var x, y Dist
+		for {
+			x = Dist(rand.Intn(len(s.world)))
+			y = Dist(rand.Intn(len(s.world[0])))
+			if s.world[x][y] == nil {
+				break
+			}
+		}
+		genome := make([]Gene, genomeLen)
+		for j := range genome {
+			genome[j] = Gene(rand.Uint32())
+		}
+		s.wyrmas[i] = NewWyrm(x, y, s.numInnerNeurons, genome)
+		s.world[x][y] = &s.wyrmas[i]
+	}
+
+}
+
+func (s *Simulation) repopulate(targetPopulation int) {
 	survivors := make([]*Wyrm, 0, len(s.wyrmas))
 	for i := range s.wyrmas {
 		if !s.wyrmas[i].dead {
@@ -61,15 +87,21 @@ func (s *State) repopulate(targetPopulation int) {
 	}
 	s.wyrmas = s.wyrmas[:0]
 	for _, genome := range genomes {
-		x := Dist(rand.Intn(int(s.sizeX)))
-		y := Dist(rand.Intn(int(s.sizeY)))
+		var x, y Dist
+		for {
+			x = Dist(rand.Intn(int(s.sizeX)))
+			y = Dist(rand.Intn(int(s.sizeY)))
+			if s.world[x][y] == nil {
+				break
+			}
+		}
 		s.wyrmas = append(s.wyrmas, NewWyrm(x, y, s.numInnerNeurons, genome))
 		s.world[x][y] = &s.wyrmas[len(s.wyrmas)-1]
 	}
 	s.tick = 0
 }
 
-func (s *State) breed(wyrmas []*Wyrm, targetPopulation int) [][]Gene {
+func (s *Simulation) breed(wyrmas []*Wyrm, targetPopulation int) [][]Gene {
 	genomes := make([][]Gene, 0, targetPopulation)
 	pop := len(wyrmas)
 	numChildren := targetPopulation / pop

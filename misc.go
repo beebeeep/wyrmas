@@ -13,7 +13,7 @@ var (
 
 type Dist int8
 type Direction [2]Dist
-type activationFn func(s *State, w *Wyrm, n *Neuron) float64
+type activationFn func(s *Simulation, w *Wyrm, n *Neuron) float64
 
 func (d Direction) normalize() float64 {
 	var s = 1.0 / 7.0

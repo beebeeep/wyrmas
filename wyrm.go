@@ -33,6 +33,7 @@ type Neuron struct {
 func NewWyrm(x, y Dist, numInner int, genome []Gene) Wyrm {
 	w := Wyrm{
 		x: x, y: y,
+		genome:      genome,
 		sensorLayer: make([]*Neuron, len(sensors)),
 		innerLayer:  make([]*Neuron, numInner),
 		actionLayer: make([]*Neuron, len(actions)),
@@ -66,7 +67,7 @@ func NewWyrm(x, y Dist, numInner int, genome []Gene) Wyrm {
 	return w
 }
 
-func tanhActivation(_ *State, _ *Wyrm, n *Neuron) float64 {
+func tanhActivation(_ *Simulation, _ *Wyrm, n *Neuron) float64 {
 	var sum float64
 	for _, l := range n.inputs {
 		sum += l.source.potential * l.weight
