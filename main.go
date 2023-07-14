@@ -12,6 +12,41 @@ const (
 	cellSize = 7
 )
 
+func main() {
+	sizeX := 128
+	sizeY := 128
+	targetPopulation := 1000
+	genomeLen := 30
+	numInnerNeurons := 5
+	mutationProbability := 0.09
+	maxAge := 100
+	maxDist := 30
+
+	simulation := Simulation{
+		sizeX: Dist(sizeX), sizeY: Dist(sizeY), oscPeriod: 5,
+		mutationProbability: mutationProbability, numInnerNeurons: numInnerNeurons,
+		maxAge: maxAge, maxDist: Dist(maxDist),
+	}
+	simulation.world = make([][]*Wyrm, sizeX)
+	createSelectionArea(&simulation)
+	for x := range simulation.world {
+		simulation.world[x] = make([]*Wyrm, sizeY)
+	}
+	simulation.randomizePopulation(targetPopulation, genomeLen)
+
+	window, err := sdl.CreateWindow("wyrmas", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+		int32(sizeX*cellSize), int32(sizeY*cellSize), sdl.WINDOW_SHOWN)
+	if err != nil {
+		log.Fatalf("creating window: %s", err)
+	}
+	defer window.Destroy()
+	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
+	if err != nil {
+		log.Fatalf("creating renderer: %s", err)
+	}
+	visualSimulation(simulation, 300, renderer)
+}
+
 func visualSimulation(simulation Simulation, ticksPerGen int, renderer *sdl.Renderer) {
 	var (
 		running      = true
@@ -113,67 +148,22 @@ func createSelectionArea(s *Simulation) {
 
 	for x := range s.selectionArea {
 		for y := range s.selectionArea[x] {
-
+			// survive on border
 			//if x >= sx/8 && x <= sx*7/8 && y >= sy/8 && y <= sy*7/8 {
 			//	continue
 			//}
 
+			//	checker patter
 			//if x%20 < 15 && y%20 < 15 {
 			//	continue
 			//}
 
+			// survive in middle
 			if !(x >= sx*3/8 && x < sx*5/8 && y >= sy*3/8 && y < sy*5/8) {
 				continue
 			}
+
 			s.selectionArea[x][y] = true
 		}
 	}
-
-	/*
-			for x := sx * 7 / 8; x < sx; x++ {
-				for y := range s.selectionArea[x] {
-					s.selectionArea[x][y] = true
-				}
-		}
-	*/
-}
-
-func main() {
-	sizeX := 128
-	sizeY := 128
-	targetPopulation := 1000
-	genomeLen := 30
-	numInnerNeurons := 5
-	mutationProbability := 0.09
-	maxAge := 100
-	maxDist := 30
-
-	simulation := Simulation{
-		sizeX: Dist(sizeX), sizeY: Dist(sizeY), oscPeriod: 5,
-		mutationProbability: mutationProbability, numInnerNeurons: numInnerNeurons,
-		maxAge: maxAge, maxDist: Dist(maxDist),
-	}
-	simulation.world = make([][]*Wyrm, sizeX)
-	createSelectionArea(&simulation)
-	for x := range simulation.world {
-		simulation.world[x] = make([]*Wyrm, sizeY)
-	}
-
-	simulation.randomizePopulation(targetPopulation, genomeLen)
-	/*
-		for i, w := range simulation.wyrmas[:10] {
-			w.DumpGenomeGraph(fmt.Sprintf("genomes/wyrm%d.png", i))
-		}
-	*/
-	window, err := sdl.CreateWindow("wyrmas", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
-		int32(sizeX*cellSize), int32(sizeY*cellSize), sdl.WINDOW_SHOWN)
-	if err != nil {
-		log.Fatalf("creating window: %s", err)
-	}
-	defer window.Destroy()
-	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
-	if err != nil {
-		log.Fatalf("creating renderer: %s", err)
-	}
-	visualSimulation(simulation, 300, renderer)
 }
