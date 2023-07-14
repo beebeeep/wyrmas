@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 )
@@ -76,5 +75,4 @@ func move(s *Simulation, w *Wyrm, d Direction) {
 	w.x = x1
 	w.y = y1
 	s.world[w.x][w.y] = w
-	fmt.Println("move")
 }

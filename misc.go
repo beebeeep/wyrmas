@@ -11,7 +11,7 @@ var (
 	_dirSE = Direction{1, 1}
 )
 
-type Dist int8
+type Dist int32
 type Direction [2]Dist
 type activationFn func(s *Simulation, w *Wyrm, n *Neuron) float64
 

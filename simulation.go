@@ -36,13 +36,18 @@ func (s *Simulation) simulationStep() {
 	}
 }
 
-func (s *Simulation) selectionEastSide() {
+func (s *Simulation) selectionEastSide() int {
 	// leave only those who ended up near the eastern border
+	survivors := len(s.wyrmas)
 	for x := Dist(0); x <= s.sizeX*3/4; x++ {
 		for y := Dist(0); y < s.sizeY; y++ {
-			s.world[x][y].dead = true
+			if w := s.world[x][y]; w != nil {
+				w.dead = true
+			}
+			survivors--
 		}
 	}
+	return survivors
 }
 
 func (s *Simulation) randomizePopulation(targetPopulation, genomeLen int) {

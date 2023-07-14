@@ -1,10 +1,18 @@
 package main
 
-import "math"
+import (
+	"fmt"
+	"github.com/goccy/go-graphviz"
+	"github.com/goccy/go-graphviz/cgraph"
+	"log"
+	"math"
+)
 
 var (
-	actions = []activationFn{aKill, aResp, aMoveF, aMoveEW, aMoveNS}
-	sensors = []activationFn{sAge, sRand, sPop, sDistN, sDirN, sOsc, sLat, sLon}
+	actions     = []activationFn{aKill, aResp, aMoveF, aMoveEW, aMoveNS}
+	sensors     = []activationFn{sAge, sRand, sPop, sDistN, sDirN, sOsc, sLat, sLon}
+	sensorNames = []string{"sAge", "sRand", "sPop", "sDistN", "sDirN", "sOsc", "sLat", "sLon"}
+	actionNames = []string{"aKill", "aResp", "aMoveF", "aMoveEW", "aMoveNS"}
 )
 
 type Wyrm struct {
@@ -65,6 +73,47 @@ func NewWyrm(x, y Dist, numInner int, genome []Gene) Wyrm {
 	}
 
 	return w
+}
+
+func (w Wyrm) DumpGenome(filename string) {
+	g := graphviz.New()
+	graph, err := g.Graph()
+	if err != nil {
+		log.Fatal(err)
+	}
+	nodes := make(map[*Neuron]*cgraph.Node)
+
+	for i, n := range w.sensorLayer {
+		node, err := graph.CreateNode(sensorNames[i])
+		if err != nil {
+			log.Fatal(err)
+		}
+		nodes[n] = node
+	}
+	for i, n := range w.innerLayer {
+		node, err := graph.CreateNode(fmt.Sprintf("inner-%d", i))
+		if err != nil {
+			log.Fatal(err)
+		}
+		nodes[n] = node
+	}
+	for i, n := range w.actionLayer {
+		node, err := graph.CreateNode(actionNames[i])
+		if err != nil {
+			log.Fatal(err)
+		}
+		nodes[n] = node
+	}
+	for neuron := range nodes {
+		for _, link := range neuron.inputs {
+			name := fmt.Sprintf("%.2f", link.weight)
+			e, _ := graph.CreateEdge(name, nodes[link.source], nodes[neuron])
+			e.SetLabel(name)
+		}
+	}
+	if err := g.RenderFilename(graph, graphviz.PNG, filename); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func tanhActivation(_ *Simulation, _ *Wyrm, n *Neuron) float64 {

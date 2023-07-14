@@ -10,7 +10,7 @@ const (
 	cellSize = 7
 )
 
-func visualSimulation(simulation Simulation, renderer *sdl.Renderer) {
+func visualSimulation(simulation Simulation, ticksPerGen int, renderer *sdl.Renderer) {
 	running := true
 	for running {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -20,6 +20,13 @@ func visualSimulation(simulation Simulation, renderer *sdl.Renderer) {
 			}
 		}
 		simulation.simulationStep()
+		if simulation.tick >= ticksPerGen {
+			targetPop := len(simulation.wyrmas)
+			survivors := simulation.selectionEastSide()
+			fmt.Printf("new generation, survive percent %.2f\n", 100.0*float32(survivors)/float32(targetPop))
+			simulation.tick = 0
+			simulation.repopulate(targetPop)
+		}
 		fmt.Printf("tick %d\n", simulation.tick)
 		renderer.SetDrawColor(0, 0, 0, 255)
 		renderer.Clear()
@@ -53,6 +60,9 @@ func main() {
 		simulation.world[x] = make([]*Wyrm, sizeY)
 	}
 	simulation.randomizePopulation(1000, 4)
+	for i, w := range simulation.wyrmas[:10] {
+		w.DumpGenome(fmt.Sprintf("genomes/wyrm%d.png", i))
+	}
 	window, err := sdl.CreateWindow("wyrmas", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		int32(sizeX*cellSize), int32(sizeY*cellSize), sdl.WINDOW_SHOWN)
 	if err != nil {
@@ -63,5 +73,5 @@ func main() {
 	if err != nil {
 		log.Fatalf("creating renderer: %s", err)
 	}
-	visualSimulation(simulation, renderer)
+	visualSimulation(simulation, 300, renderer)
 }
