@@ -144,7 +144,7 @@ func main() {
 	targetPopulation := 1000
 	genomeLen := 30
 	numInnerNeurons := 5
-	mutationProbability := 0.05
+	mutationProbability := 0.09
 	maxAge := 100
 	maxDist := 30
 
