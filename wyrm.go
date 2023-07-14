@@ -10,8 +10,8 @@ import (
 
 var (
 	actions     = []activationFn{aKill, aResp, aMoveF, aMoveEW, aMoveNS}
-	sensors     = []activationFn{sAge, sRand, sPop, sDistN, sDirN, sOsc, sLat, sLon}
-	sensorNames = []string{"sAge", "sRand", "sPop", "sDistN", "sDirN", "sOsc", "sLat", "sLon"}
+	sensors     = []activationFn{sAge, sRand, sPop, sDistN, sDirN, sOsc, sLat, sLon, sGood}
+	sensorNames = []string{"sAge", "sRand", "sPop", "sDistN", "sDirN", "sOsc", "sLat", "sLon", "sGood"}
 	actionNames = []string{"aKill", "aResp", "aMoveF", "aMoveEW", "aMoveNS"}
 )
 
@@ -75,7 +75,7 @@ func NewWyrm(x, y Dist, numInner int, genome []Gene) Wyrm {
 	return w
 }
 
-func (w Wyrm) DumpGenome(filename string) {
+func (w Wyrm) DumpGenomeGraph(filename string) {
 	g := graphviz.New()
 	graph, err := g.Graph()
 	if err != nil {
@@ -106,9 +106,10 @@ func (w Wyrm) DumpGenome(filename string) {
 	}
 	for neuron := range nodes {
 		for _, link := range neuron.inputs {
-			name := fmt.Sprintf("%.2f", link.weight)
+			name := fmt.Sprintf("%s-%s", nodes[link.source], nodes[neuron])
 			e, _ := graph.CreateEdge(name, nodes[link.source], nodes[neuron])
-			e.SetLabel(name)
+			e.SetLabel(fmt.Sprintf("%.2f", link.weight))
+			e.SetLabelFontSize(4)
 		}
 	}
 	if err := g.RenderFilename(graph, graphviz.PNG, filename); err != nil {

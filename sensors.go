@@ -38,7 +38,7 @@ func sPop(s *Simulation, w *Wyrm, _ *Neuron) float64 {
 // distance to nearest wyrm
 func sDistN(s *Simulation, w *Wyrm, _ *Neuron) float64 {
 	d, _ := findNearest(s, w)
-	return float64(d) / float64(s.maxDist)
+	return 1.0 - float64(d)/float64(s.maxDist)
 }
 
 // direction of nearest wyrm.
@@ -56,7 +56,7 @@ func sDistF(s *Simulation, w *Wyrm, _ *Neuron) float64 {
 			return 0
 		}
 		if s.world[x][y] != nil {
-			return float64(t) / float64(s.maxDist)
+			return 1.0 - float64(t)/float64(s.maxDist)
 		}
 	}
 	return 0
@@ -75,6 +75,24 @@ func sLat(s *Simulation, w *Wyrm, _ *Neuron) float64 {
 // longitude (0 is west, 1 is east)
 func sLon(s *Simulation, w *Wyrm, _ *Neuron) float64 {
 	return float64(w.x) / float64(s.sizeX-1)
+}
+
+// gradient towards good place in forward direction
+func sGood(s *Simulation, w *Wyrm, _ *Neuron) float64 {
+	if s.selectionArea[w.x][w.y] {
+		return 1
+	}
+	for t := Dist(1); t <= s.maxDist; t++ {
+		x := w.x + t*w.direction[0]
+		y := w.y + t*w.direction[1]
+		if x >= s.sizeX || x < 0 || y >= s.sizeY || y < 0 {
+			return 0
+		}
+		if s.selectionArea[x][y] {
+			return 1 - float64(t)/float64(s.maxDist)
+		}
+	}
+	return 0
 }
 
 func findNearest(s *Simulation, w *Wyrm) (Dist, Direction) {

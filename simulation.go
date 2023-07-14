@@ -16,6 +16,7 @@ type Simulation struct {
 	tick                int // simulation tick
 	wyrmas              []Wyrm
 	world               [][]*Wyrm // x, y -> wyrm
+	selectionArea       [][]bool
 }
 
 func (s *Simulation) simulationStep() {
@@ -44,6 +45,18 @@ func (s *Simulation) selectionEastSide() int {
 			if w := s.world[x][y]; w != nil {
 				w.dead = true
 			}
+			survivors--
+		}
+	}
+	return survivors
+}
+
+func (s *Simulation) selectionZone() int {
+	// leave only those who ended up inside selection area
+	survivors := len(s.wyrmas)
+	for i, w := range s.wyrmas {
+		if !s.selectionArea[w.x][w.y] {
+			s.wyrmas[i].dead = true
 			survivors--
 		}
 	}
