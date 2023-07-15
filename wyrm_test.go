@@ -9,6 +9,7 @@ import (
 const _blen = 1000000
 
 func Benchmark_float32(b *testing.B) {
+	b.Skip()
 	b.StopTimer()
 	a := make([]float32, _blen)
 	for i := range a {
@@ -25,6 +26,7 @@ func Benchmark_float32(b *testing.B) {
 }
 
 func Benchmark_float64(b *testing.B) {
+	b.Skip()
 	b.StopTimer()
 	a := make([]float64, _blen)
 	for i := range a {
@@ -37,5 +39,18 @@ func Benchmark_float64(b *testing.B) {
 		math.Sin(a[i%_blen])
 		math.Cos(a[i%_blen])
 		math.Sinh(a[i%_blen])
+	}
+}
+
+func Benchmark_Simulation(b *testing.B) {
+	simulation := NewSimulation(128, 128, 5, 5,
+		100, 30, 10, 1000, 0.05)
+	for n := 0; n < b.N; n++ {
+		simulation.simulationStep()
+		if simulation.tick >= 300 {
+			simulation.tick = 0
+			simulation.applySelection()
+			simulation.repopulate()
+		}
 	}
 }

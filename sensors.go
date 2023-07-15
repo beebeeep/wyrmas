@@ -77,8 +77,42 @@ func sLon(s *Simulation, w *Wyrm, _ *Neuron) float64 {
 	return float64(w.x) / float64(s.sizeX-1)
 }
 
-// gradient towards good place in forward direction
-func sGood(s *Simulation, w *Wyrm, _ *Neuron) float64 {
+// count of good places in forward direction
+func sGoodCF(s *Simulation, w *Wyrm, _ *Neuron) float64 {
+	count := 0
+	for t := Dist(0); t <= s.maxDist; t++ {
+		x := w.x + t*w.direction[0]
+		y := w.y + t*w.direction[1]
+		if x >= s.sizeX || x < 0 || y >= s.sizeY || y < 0 {
+			return 0
+		}
+		if s.selectionArea[x][y] {
+			count++
+		}
+	}
+	return float64(count) / float64(s.maxDist)
+}
+
+// count of good places around
+func sGoodCA(s *Simulation, w *Wyrm, _ *Neuron) float64 {
+	count := 0
+	dist := s.maxDist / 3 // see less far
+	for t := Dist(0); t <= dist; t++ {
+		x := w.x + t*w.direction[0]
+		y := w.y + t*w.direction[1]
+		if x >= s.sizeX || x < 0 || y >= s.sizeY || y < 0 {
+			return 0
+		}
+		if s.selectionArea[x][y] {
+			count++
+		}
+	}
+	return float64(count) / float64(dist*dist)
+	//return 0
+}
+
+// distance to good place in forward direction
+func sGoodD(s *Simulation, w *Wyrm, _ *Neuron) float64 {
 	if s.selectionArea[w.x][w.y] {
 		return 1
 	}

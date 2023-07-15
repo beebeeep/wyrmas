@@ -13,29 +13,11 @@ const (
 )
 
 func main() {
-	sizeX := 128
-	sizeY := 128
-	targetPopulation := 1000
-	genomeLen := 30
-	numInnerNeurons := 5
-	mutationProbability := 0.09
-	maxAge := 100
-	maxDist := 30
-
-	simulation := Simulation{
-		sizeX: Dist(sizeX), sizeY: Dist(sizeY), oscPeriod: 5,
-		mutationProbability: mutationProbability, numInnerNeurons: numInnerNeurons,
-		maxAge: maxAge, maxDist: Dist(maxDist),
-	}
-	simulation.world = make([][]*Wyrm, sizeX)
-	createSelectionArea(&simulation)
-	for x := range simulation.world {
-		simulation.world[x] = make([]*Wyrm, sizeY)
-	}
-	simulation.randomizePopulation(targetPopulation, genomeLen)
+	simulation := NewSimulation(128, 128, 5, 5,
+		100, 30, 10, 1000, 0.01)
 
 	window, err := sdl.CreateWindow("wyrmas", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
-		int32(sizeX*cellSize), int32(sizeY*cellSize), sdl.WINDOW_SHOWN)
+		int32(simulation.sizeX*cellSize), int32(simulation.sizeY*cellSize), sdl.WINDOW_SHOWN)
 	if err != nil {
 		log.Fatalf("creating window: %s", err)
 	}
@@ -53,7 +35,7 @@ func visualSimulation(simulation Simulation, ticksPerGen int, renderer *sdl.Rend
 		pause        = false
 		generation   = 0
 		rates        = []int{0, 1, 10, 50, 100}
-		rateIdx      = 4
+		rateIdx      = 1
 		genStart     = time.Now()
 		dumpSurvivor = false
 	)
@@ -90,7 +72,7 @@ func visualSimulation(simulation Simulation, ticksPerGen int, renderer *sdl.Rend
 			genTime := time.Now().Sub(genStart)
 			generation++
 			targetPop := len(simulation.wyrmas)
-			survivors := simulation.selectionZone()
+			survivors := simulation.applySelection()
 			fmt.Printf("generation %d, survived %.2f%%\n", generation, 100.0*float32(survivors)/float32(targetPop))
 			fmt.Printf("generation simulation took %.3f sec, rate %.1f ticks/sec\n", genTime.Seconds(), float64(ticksPerGen)/genTime.Seconds())
 			if dumpSurvivor {
@@ -105,7 +87,7 @@ func visualSimulation(simulation Simulation, ticksPerGen int, renderer *sdl.Rend
 				}
 			}
 			simulation.tick = 0
-			simulation.repopulate(targetPop)
+			simulation.repopulate()
 			genStart = time.Now()
 		}
 	}
@@ -136,34 +118,4 @@ func renderSimulation(simulation Simulation, renderer *sdl.Renderer) {
 		}
 	}
 	renderer.Present()
-}
-
-func createSelectionArea(s *Simulation) {
-	sx := int(s.sizeX)
-	sy := int(s.sizeY)
-	s.selectionArea = make([][]bool, sx)
-	for x := range s.selectionArea {
-		s.selectionArea[x] = make([]bool, sy)
-	}
-
-	for x := range s.selectionArea {
-		for y := range s.selectionArea[x] {
-			// survive on border
-			//if x >= sx/8 && x <= sx*7/8 && y >= sy/8 && y <= sy*7/8 {
-			//	continue
-			//}
-
-			//	checker patter
-			//if x%20 < 15 && y%20 < 15 {
-			//	continue
-			//}
-
-			// survive in middle
-			if !(x >= sx*3/8 && x < sx*5/8 && y >= sy*3/8 && y < sy*5/8) {
-				continue
-			}
-
-			s.selectionArea[x][y] = true
-		}
-	}
 }

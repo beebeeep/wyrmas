@@ -6,17 +6,62 @@ import (
 )
 
 type Simulation struct {
-	sizeX, sizeY        Dist
-	maxDist             Dist // max distance wyrm can see
-	oscPeriod           int
-	oscValue            float64
-	mutationProbability float64
-	numInnerNeurons     int
-	maxAge              int
-	tick                int // simulation tick
-	wyrmas              []Wyrm
-	world               [][]*Wyrm // x, y -> wyrm
-	selectionArea       [][]bool
+	sizeX, sizeY    Dist
+	maxDist         Dist // max distance wyrm can see
+	oscPeriod       int
+	oscValue        float64
+	mutationRate    float64
+	numInnerNeurons int
+	maxAge          int
+	tick            int // simulation tick
+	wyrmas          []Wyrm
+	world           [][]*Wyrm // x, y -> wyrm
+	selectionArea   [][]bool
+}
+
+func NewSimulation(sizeX, sizeY, oscPeriod, numInnerNeurons, maxAge, maxDist, genomeLen, population int, mutationRate float64) Simulation {
+	simulation := Simulation{
+		sizeX: Dist(sizeX), sizeY: Dist(sizeY), oscPeriod: oscPeriod,
+		mutationRate: mutationRate, numInnerNeurons: numInnerNeurons,
+		maxAge: maxAge, maxDist: Dist(maxDist),
+		world: make([][]*Wyrm, sizeX),
+	}
+	for x := range simulation.world {
+		simulation.world[x] = make([]*Wyrm, sizeY)
+	}
+	simulation.randomizePopulation(population, genomeLen)
+	simulation.createSelectionArea()
+	return simulation
+}
+
+func (s *Simulation) createSelectionArea() {
+	sx := int(s.sizeX)
+	sy := int(s.sizeY)
+	s.selectionArea = make([][]bool, sx)
+	for x := range s.selectionArea {
+		s.selectionArea[x] = make([]bool, sy)
+	}
+
+	for x := range s.selectionArea {
+		for y := range s.selectionArea[x] {
+			// survive on border
+			//if x >= sx/8 && x <= sx*7/8 && y >= sy/8 && y <= sy*7/8 {
+			//	continue
+			//}
+
+			//	checker patter
+			//if x%20 < 15 && y%20 < 15 {
+			//	continue
+			//}
+
+			//survive in middle
+			if !(x >= sx*3/8 && x < sx*5/8 && y >= sy*3/8 && y < sy*5/8) {
+				continue
+			}
+
+			s.selectionArea[x][y] = true
+		}
+	}
 }
 
 func (s *Simulation) simulationStep() {
@@ -37,21 +82,7 @@ func (s *Simulation) simulationStep() {
 	}
 }
 
-func (s *Simulation) selectionEastSide() int {
-	// leave only those who ended up near the eastern border
-	survivors := len(s.wyrmas)
-	for x := Dist(0); x <= s.sizeX*3/4; x++ {
-		for y := Dist(0); y < s.sizeY; y++ {
-			if w := s.world[x][y]; w != nil {
-				w.dead = true
-			}
-			survivors--
-		}
-	}
-	return survivors
-}
-
-func (s *Simulation) selectionZone() int {
+func (s *Simulation) applySelection() int {
 	// leave only those who ended up inside selection area
 	survivors := len(s.wyrmas)
 	for i, w := range s.wyrmas {
@@ -89,22 +120,25 @@ func (s *Simulation) randomizePopulation(targetPopulation, genomeLen int) {
 
 }
 
-func (s *Simulation) repopulate(targetPopulation int) {
+func (s *Simulation) repopulate() {
 	survivors := make([]*Wyrm, 0, len(s.wyrmas))
 	for i := range s.wyrmas {
 		if !s.wyrmas[i].dead {
 			survivors = append(survivors, &s.wyrmas[i])
 		}
 	}
-	genomes := s.breed(survivors, targetPopulation)
-	// wipe parents
+	genomes := s.breed(survivors, len(s.wyrmas))
+
+	// clean the world
 	for x := range s.world {
 		for y := range s.world[x] {
 			s.world[x][y] = nil
 		}
 	}
-	s.wyrmas = s.wyrmas[:0]
-	for _, genome := range genomes {
+
+	// reuse previous generation by re-placing them randomly
+	// and rewiring neurons using new genome
+	for i, genome := range genomes {
 		var x, y Dist
 		for {
 			x = Dist(rand.Intn(int(s.sizeX)))
@@ -113,8 +147,13 @@ func (s *Simulation) repopulate(targetPopulation int) {
 				break
 			}
 		}
-		s.wyrmas = append(s.wyrmas, NewWyrm(x, y, s.numInnerNeurons, genome))
-		s.world[x][y] = &s.wyrmas[len(s.wyrmas)-1]
+		s.wyrmas[i].x = x
+		s.wyrmas[i].y = y
+		s.wyrmas[i].dead = false
+		s.wyrmas[i].genome = genome
+		s.wyrmas[i].wireNeurons()
+
+		s.world[x][y] = &s.wyrmas[i]
 	}
 	s.tick = 0
 }
@@ -127,7 +166,7 @@ func (s *Simulation) breed(wyrmas []*Wyrm, targetPopulation int) [][]Gene {
 	f := func(idx int) []Gene {
 		genome := mixGenomes(wyrmas[idx].genome, wyrmas[(idx+1)%pop].genome)
 		for i := range genome {
-			if rand.Float64() <= s.mutationProbability {
+			if rand.Float64() <= s.mutationRate {
 				genome[i].mutate()
 			}
 		}

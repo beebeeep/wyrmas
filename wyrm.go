@@ -10,8 +10,8 @@ import (
 
 var (
 	actions     = []activationFn{aKill, aResp, aMoveF, aMoveEW, aMoveNS}
-	sensors     = []activationFn{sAge, sRand, sPop, sDistN, sDirN, sOsc, sLat, sLon, sGood}
-	sensorNames = []string{"sAge", "sRand", "sPop", "sDistN", "sDirN", "sOsc", "sLat", "sLon", "sGood"}
+	sensors     = []activationFn{sAge, sRand, sPop, sDistN, sDirN, sOsc, sLat, sLon, sGoodD, sGoodCA, sGoodCF}
+	sensorNames = []string{"sAge", "sRand", "sPop", "sDistN", "sDirN", "sOsc", "sLat", "sLon", "sGoodCD", "sGoodCA", "sGoodCF"}
 	actionNames = []string{"aKill", "aResp", "aMoveF", "aMoveEW", "aMoveNS"}
 )
 
@@ -56,9 +56,23 @@ func NewWyrm(x, y Dist, numInner int, genome []Gene) Wyrm {
 	for i := range w.innerLayer {
 		w.innerLayer[i] = &Neuron{responsiveness: 1, activate: tanhActivation, inputs: make([]Link, 0, 1)}
 	}
+	w.wireNeurons()
 
+	return w
+}
+
+func (w *Wyrm) wireNeurons() {
 	var src, sink *Neuron
-	for _, gene := range genome {
+	// reset neuron links
+	for _, n := range w.innerLayer {
+		n.inputs = n.inputs[:0]
+	}
+	for _, n := range w.actionLayer {
+		n.inputs = n.inputs[:0]
+	}
+
+	// wire links according genome
+	for _, gene := range w.genome {
 		if srcInner, id := gene.getSrc(); srcInner {
 			src = w.innerLayer[id%byte(len(w.innerLayer))]
 		} else {
@@ -71,8 +85,6 @@ func NewWyrm(x, y Dist, numInner int, genome []Gene) Wyrm {
 		}
 		sink.inputs = append(sink.inputs, Link{weight: gene.getWeight(), source: src})
 	}
-
-	return w
 }
 
 func (w Wyrm) DumpGenomeGraph(filename string) {
@@ -84,6 +96,9 @@ func (w Wyrm) DumpGenomeGraph(filename string) {
 	nodes := make(map[*Neuron]*cgraph.Node)
 
 	for i, n := range w.sensorLayer {
+		if w.countSinks(n) == 0 {
+			continue
+		}
 		node, err := graph.CreateNode(sensorNames[i])
 		if err != nil {
 			log.Fatal(err)
@@ -91,6 +106,9 @@ func (w Wyrm) DumpGenomeGraph(filename string) {
 		nodes[n] = node
 	}
 	for i, n := range w.innerLayer {
+		if w.countSinks(n) == 0 {
+			continue
+		}
 		node, err := graph.CreateNode(fmt.Sprintf("inner-%d", i))
 		if err != nil {
 			log.Fatal(err)
@@ -98,6 +116,9 @@ func (w Wyrm) DumpGenomeGraph(filename string) {
 		nodes[n] = node
 	}
 	for i, n := range w.actionLayer {
+		if len(n.inputs) == 0 {
+			continue
+		}
 		node, err := graph.CreateNode(actionNames[i])
 		if err != nil {
 			log.Fatal(err)
@@ -106,7 +127,7 @@ func (w Wyrm) DumpGenomeGraph(filename string) {
 	}
 	for neuron := range nodes {
 		for _, link := range neuron.inputs {
-			name := fmt.Sprintf("%s-%s", nodes[link.source], nodes[neuron])
+			name := fmt.Sprintf("%p-%p", nodes[link.source], nodes[neuron])
 			e, _ := graph.CreateEdge(name, nodes[link.source], nodes[neuron])
 			e.SetLabel(fmt.Sprintf("%.2f", link.weight))
 			e.SetLabelFontSize(4)
@@ -115,6 +136,25 @@ func (w Wyrm) DumpGenomeGraph(filename string) {
 	if err := g.RenderFilename(graph, graphviz.PNG, filename); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (w Wyrm) countSinks(t *Neuron) int {
+	count := 0
+	for _, n := range w.innerLayer {
+		for _, in := range n.inputs {
+			if in.source == t {
+				count++
+			}
+		}
+	}
+	for _, n := range w.actionLayer {
+		for _, in := range n.inputs {
+			if in.source == t {
+				count++
+			}
+		}
+	}
+	return count
 }
 
 func tanhActivation(_ *Simulation, _ *Wyrm, n *Neuron) float64 {
