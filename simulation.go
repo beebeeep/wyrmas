@@ -29,39 +29,55 @@ func NewSimulation(sizeX, sizeY, oscPeriod, numInnerNeurons, maxAge, maxDist, ge
 	for x := range simulation.world {
 		simulation.world[x] = make([]*Wyrm, sizeY)
 	}
+	simulation.selectionArea = make([][]bool, sizeX)
+	for x := range simulation.selectionArea {
+		simulation.selectionArea[x] = make([]bool, sizeY)
+	}
 	simulation.randomizePopulation(population, genomeLen)
 	simulation.createSelectionArea()
 	return simulation
 }
 
 func (s *Simulation) createSelectionArea() {
-	sx := int(s.sizeX)
-	sy := int(s.sizeY)
-	s.selectionArea = make([][]bool, sx)
-	for x := range s.selectionArea {
-		s.selectionArea[x] = make([]bool, sy)
-	}
 
 	for x := range s.selectionArea {
 		for y := range s.selectionArea[x] {
-			// survive on border
-			//if x >= sx/8 && x <= sx*7/8 && y >= sy/8 && y <= sy*7/8 {
-			//	continue
-			//}
-
-			//	checker patter
-			//if x%20 < 15 && y%20 < 15 {
-			//	continue
-			//}
-
-			//survive in middle
-			if !(x >= sx*3/8 && x < sx*5/8 && y >= sy*3/8 && y < sy*5/8) {
-				continue
-			}
-
-			s.selectionArea[x][y] = true
+			s.selectionArea[x][y] = false
 		}
 	}
+	for i := 0; i <= 80; i++ {
+		x := rand.Intn(int(s.sizeX-4)) + 2
+		y := rand.Intn(int(s.sizeY-4)) + 2
+		for dx := -2; dx < 2; dx++ {
+			for dy := -2; dy < 2; dy++ {
+				s.selectionArea[x+dx][y+dy] = true
+			}
+		}
+	}
+
+	/*
+		for x := range s.selectionArea {
+			for y := range s.selectionArea[x] {
+				// survive on border
+				//if x >= sx/8 && x <= sx*7/8 && y >= sy/8 && y <= sy*7/8 {
+				//	continue
+				//}
+
+				//	checker patter
+				if x%20 < 15 && y%20 < 15 {
+					continue
+				}
+
+				//survive in middle
+				//if !(x >= sx*3/8 && x < sx*5/8 && y >= sy*3/8 && y < sy*5/8) {
+				//	continue
+				//}
+
+				s.selectionArea[x][y] = true
+			}
+		}
+
+	*/
 }
 
 func (s *Simulation) simulationStep() {
@@ -71,13 +87,22 @@ func (s *Simulation) simulationStep() {
 	)
 	for iw, w := range s.wyrmas {
 		for _, n := range w.sensorLayer {
-			n.potential = n.activate(s, &s.wyrmas[iw], nil)
+			if n.responsiveness == 0 {
+				continue
+			}
+			n.potential = n.responsiveness * n.activate(s, &s.wyrmas[iw], nil)
 		}
 		for _, n := range w.innerLayer {
-			n.potential = n.activate(nil, nil, n)
+			if n.responsiveness == 0 {
+				continue
+			}
+			n.potential = n.responsiveness * n.activate(nil, nil, n)
 		}
 		for _, n := range w.actionLayer {
-			n.potential = n.activate(s, &s.wyrmas[iw], n)
+			if n.responsiveness == 0 {
+				continue
+			}
+			n.potential = n.responsiveness * n.activate(s, &s.wyrmas[iw], n)
 		}
 	}
 }
@@ -149,12 +174,15 @@ func (s *Simulation) repopulate() {
 		}
 		s.wyrmas[i].x = x
 		s.wyrmas[i].y = y
+		s.wyrmas[i].direction[0] = Dist(rand.Intn(3) - 1)
+		s.wyrmas[i].direction[1] = Dist(rand.Intn(3) - 1)
 		s.wyrmas[i].dead = false
 		s.wyrmas[i].genome = genome
 		s.wyrmas[i].wireNeurons()
 
 		s.world[x][y] = &s.wyrmas[i]
 	}
+	s.createSelectionArea()
 	s.tick = 0
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 	"log"
 	"math/rand"
+	"os/exec"
 	"time"
 )
 
@@ -13,8 +14,8 @@ const (
 )
 
 func main() {
-	simulation := NewSimulation(128, 128, 5, 5,
-		100, 30, 10, 1000, 0.01)
+	simulation := NewSimulation(128, 128, 5, 10,
+		100, 30, 30, 1000, 0.05)
 
 	window, err := sdl.CreateWindow("wyrmas", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		int32(simulation.sizeX*cellSize), int32(simulation.sizeY*cellSize), sdl.WINDOW_SHOWN)
@@ -31,13 +32,12 @@ func main() {
 
 func visualSimulation(simulation Simulation, ticksPerGen int, renderer *sdl.Renderer) {
 	var (
-		running      = true
-		pause        = false
-		generation   = 0
-		rates        = []int{0, 1, 10, 50, 100}
-		rateIdx      = 1
-		genStart     = time.Now()
-		dumpSurvivor = false
+		running    = true
+		generation = 0
+		rates      = []int{0, 1, 10, 50, 100}
+		rateIdx    = 1
+		genStart   = time.Now()
+		dump       = false
 	)
 
 	for running {
@@ -53,14 +53,9 @@ func visualSimulation(simulation Simulation, ticksPerGen int, renderer *sdl.Rend
 					rateIdx = (rateIdx + 1) % len(rates)
 				}
 				if ev.Keysym.Sym == sdl.K_d {
-					dumpSurvivor = true
+					dump = true
 				}
 			}
-		}
-
-		if pause {
-			sdl.Delay(50)
-			continue
 		}
 
 		if rate := rates[rateIdx]; rate != 0 && simulation.tick%rate == 0 {
@@ -75,20 +70,26 @@ func visualSimulation(simulation Simulation, ticksPerGen int, renderer *sdl.Rend
 			survivors := simulation.applySelection()
 			fmt.Printf("generation %d, survived %.2f%%\n", generation, 100.0*float32(survivors)/float32(targetPop))
 			fmt.Printf("generation simulation took %.3f sec, rate %.1f ticks/sec\n", genTime.Seconds(), float64(ticksPerGen)/genTime.Seconds())
-			if dumpSurvivor {
-				dumpSurvivor = false
-				for {
-					if w := simulation.wyrmas[rand.Intn(len(simulation.wyrmas))]; !w.dead {
-						fmt.Printf("dumped survivor %v", w.genome)
-						w.DumpGenomeGraph(fmt.Sprintf("survivor-gen%d.png", generation))
-						break
-
-					}
-				}
+			if dump {
+				dump = false
+				dumpSurvivor(simulation, generation)
 			}
 			simulation.tick = 0
 			simulation.repopulate()
 			genStart = time.Now()
+		}
+	}
+}
+
+func dumpSurvivor(simulation Simulation, generation int) {
+	for {
+		if w := simulation.wyrmas[rand.Intn(len(simulation.wyrmas))]; !w.dead {
+			fmt.Printf("dumped survivor %v", w.genome)
+			fname := fmt.Sprintf("survivor-gen%d.png", generation)
+			w.DumpGenomeGraph(fname)
+			cmd := exec.Command("open", fname)
+			go cmd.Run()
+			return
 		}
 	}
 }

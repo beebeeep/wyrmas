@@ -17,7 +17,7 @@ func aKill(s *Simulation, w *Wyrm, n *Neuron) float64 {
 func aResp(s *Simulation, w *Wyrm, n *Neuron) float64 {
 	p := tanhActivation(s, w, n)
 	if sgn, ok := activate(p); ok {
-		n.responsiveness *= 0.1 * sgn
+		n.responsiveness += 0.05 * sgn
 	}
 	return p
 }

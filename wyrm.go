@@ -6,13 +6,50 @@ import (
 	"github.com/goccy/go-graphviz/cgraph"
 	"log"
 	"math"
+	"math/rand"
 )
 
 var (
-	actions     = []activationFn{aKill, aResp, aMoveF, aMoveEW, aMoveNS}
-	sensors     = []activationFn{sAge, sRand, sPop, sDistN, sDirN, sOsc, sLat, sLon, sGoodD, sGoodCA, sGoodCF}
-	sensorNames = []string{"sAge", "sRand", "sPop", "sDistN", "sDirN", "sOsc", "sLat", "sLon", "sGoodCD", "sGoodCA", "sGoodCF"}
-	actionNames = []string{"aKill", "aResp", "aMoveF", "aMoveEW", "aMoveNS"}
+	sensors = []activationFn{
+		sAge,
+		sRand,
+		sPop,
+		sDistN,
+		sDirN,
+		sOsc,
+		//sLat,
+		//sLon,
+		sGoodD,
+		sGoodCA,
+		sGoodCF,
+	}
+	sensorNames = []string{
+		"sAge",
+		"sRand",
+		"sPop",
+		"sDistN",
+		"sDirN",
+		"sOsc",
+		//"sLat",
+		//"sLon",
+		"sGoodCD",
+		"sGoodCA",
+		"sGoodCF",
+	}
+	actions = []activationFn{
+		//aKill,
+		aResp,
+		aMoveF,
+		aMoveEW,
+		aMoveNS,
+	}
+	actionNames = []string{
+		//"aKill",
+		"aResp",
+		"aMoveF",
+		"aMoveEW",
+		"aMoveNS",
+	}
 )
 
 type Wyrm struct {
@@ -41,6 +78,7 @@ type Neuron struct {
 func NewWyrm(x, y Dist, numInner int, genome []Gene) Wyrm {
 	w := Wyrm{
 		x: x, y: y,
+		direction:   Direction{Dist(rand.Intn(3) - 1), Dist(rand.Intn(3) - 1)},
 		genome:      genome,
 		sensorLayer: make([]*Neuron, len(sensors)),
 		innerLayer:  make([]*Neuron, numInner),
@@ -51,7 +89,6 @@ func NewWyrm(x, y Dist, numInner int, genome []Gene) Wyrm {
 	}
 	for i := range actions {
 		w.actionLayer[i] = &Neuron{responsiveness: 1, activate: actions[i], inputs: make([]Link, 0, 1)}
-
 	}
 	for i := range w.innerLayer {
 		w.innerLayer[i] = &Neuron{responsiveness: 1, activate: tanhActivation, inputs: make([]Link, 0, 1)}
@@ -85,6 +122,27 @@ func (w *Wyrm) wireNeurons() {
 		}
 		sink.inputs = append(sink.inputs, Link{weight: gene.getWeight(), source: src})
 	}
+	for _, n := range w.sensorLayer {
+		if w.countSinks(n) == 0 {
+			n.responsiveness = 0
+		} else {
+			n.responsiveness = 1
+		}
+	}
+	for _, n := range w.innerLayer {
+		if w.countSinks(n) == 0 || len(n.inputs) == 0 {
+			n.responsiveness = 0
+		} else {
+			n.responsiveness = 1
+		}
+	}
+	for _, n := range w.actionLayer {
+		if len(n.inputs) == 0 {
+			n.responsiveness = 0
+		} else {
+			n.responsiveness = 1
+		}
+	}
 }
 
 func (w Wyrm) DumpGenomeGraph(filename string) {
@@ -99,7 +157,7 @@ func (w Wyrm) DumpGenomeGraph(filename string) {
 		if w.countSinks(n) == 0 {
 			continue
 		}
-		node, err := graph.CreateNode(sensorNames[i])
+		node, err := graph.CreateNode(fmt.Sprintf("%s (%.1f)", sensorNames[i], n.responsiveness))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -109,7 +167,7 @@ func (w Wyrm) DumpGenomeGraph(filename string) {
 		if w.countSinks(n) == 0 {
 			continue
 		}
-		node, err := graph.CreateNode(fmt.Sprintf("inner-%d", i))
+		node, err := graph.CreateNode(fmt.Sprintf("inner-%d (%.1f)", i, n.responsiveness))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -119,7 +177,7 @@ func (w Wyrm) DumpGenomeGraph(filename string) {
 		if len(n.inputs) == 0 {
 			continue
 		}
-		node, err := graph.CreateNode(actionNames[i])
+		node, err := graph.CreateNode(fmt.Sprintf("%s (%.1f)", actionNames[i], n.responsiveness))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -162,5 +220,5 @@ func tanhActivation(_ *Simulation, _ *Wyrm, n *Neuron) float64 {
 	for _, l := range n.inputs {
 		sum += l.source.potential * l.weight
 	}
-	return math.Tanh(n.responsiveness * sum)
+	return math.Tanh(sum)
 }
