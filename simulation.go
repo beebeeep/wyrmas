@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 	"math/rand"
+	"sort"
 )
 
 type Simulation struct {
@@ -40,44 +41,44 @@ func NewSimulation(sizeX, sizeY, oscPeriod, numInnerNeurons, maxAge, maxDist, ge
 
 func (s *Simulation) createSelectionArea() {
 
+	/*	for x := range s.selectionArea {
+			for y := range s.selectionArea[x] {
+				s.selectionArea[x][y] = false
+			}
+		}
+		for i := 0; i <= 80; i++ {
+			x := rand.Intn(int(s.sizeX-4)) + 2
+			y := rand.Intn(int(s.sizeY-4)) + 2
+			for dx := -2; dx < 2; dx++ {
+				for dy := -2; dy < 2; dy++ {
+					s.selectionArea[x+dx][y+dy] = true
+				}
+			}
+		}
+	*/
+	sx := int(s.sizeX)
+	sy := int(s.sizeY)
 	for x := range s.selectionArea {
 		for y := range s.selectionArea[x] {
-			s.selectionArea[x][y] = false
+			// survive on border
+			if x >= sx/8 && x <= sx*7/8 && y >= sy/8 && y <= sy*7/8 {
+				continue
+			}
+
+			//	checker patter
+			//if x%20 < 15 && y%20 < 15 {
+			//	continue
+			//}
+
+			//survive in middle
+			//if !(x >= sx*3/8 && x < sx*5/8 && y >= sy*3/8 && y < sy*5/8) {
+			//	continue
+			//}
+
+			s.selectionArea[x][y] = true
 		}
 	}
-	for i := 0; i <= 80; i++ {
-		x := rand.Intn(int(s.sizeX-4)) + 2
-		y := rand.Intn(int(s.sizeY-4)) + 2
-		for dx := -2; dx < 2; dx++ {
-			for dy := -2; dy < 2; dy++ {
-				s.selectionArea[x+dx][y+dy] = true
-			}
-		}
-	}
 
-	/*
-		for x := range s.selectionArea {
-			for y := range s.selectionArea[x] {
-				// survive on border
-				//if x >= sx/8 && x <= sx*7/8 && y >= sy/8 && y <= sy*7/8 {
-				//	continue
-				//}
-
-				//	checker patter
-				if x%20 < 15 && y%20 < 15 {
-					continue
-				}
-
-				//survive in middle
-				//if !(x >= sx*3/8 && x < sx*5/8 && y >= sy*3/8 && y < sy*5/8) {
-				//	continue
-				//}
-
-				s.selectionArea[x][y] = true
-			}
-		}
-
-	*/
 }
 
 func (s *Simulation) simulationStep() {
@@ -198,6 +199,9 @@ func (s *Simulation) breed(wyrmas []*Wyrm, targetPopulation int) [][]Gene {
 				genome[i].mutate()
 			}
 		}
+		sort.Slice(genome, func(i, j int) bool {
+			return genome[i] < genome[j]
+		})
 		return genome
 	}
 

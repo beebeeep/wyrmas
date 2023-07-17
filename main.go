@@ -14,8 +14,8 @@ const (
 )
 
 func main() {
-	simulation := NewSimulation(128, 128, 5, 10,
-		100, 30, 30, 1000, 0.05)
+	simulation := NewSimulation(128, 128, 5, 3,
+		100, 30, 10, 1000, 0.05)
 
 	window, err := sdl.CreateWindow("wyrmas", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		int32(simulation.sizeX*cellSize), int32(simulation.sizeY*cellSize), sdl.WINDOW_SHOWN)
@@ -84,7 +84,7 @@ func visualSimulation(simulation Simulation, ticksPerGen int, renderer *sdl.Rend
 func dumpSurvivor(simulation Simulation, generation int) {
 	for {
 		if w := simulation.wyrmas[rand.Intn(len(simulation.wyrmas))]; !w.dead {
-			fmt.Printf("dumped survivor %v", w.genome)
+			fmt.Printf("dumped survivor %v (hash %v)", w.genome, genomeHash(w.genome))
 			fname := fmt.Sprintf("survivor-gen%d.png", generation)
 			w.DumpGenomeGraph(fname)
 			cmd := exec.Command("open", fname)
@@ -113,7 +113,8 @@ func renderSimulation(simulation Simulation, renderer *sdl.Renderer) {
 				renderer.FillRect(&sdl.Rect{X: x + 1, Y: y + 1, W: cellSize - 1, H: cellSize - 1})
 			}
 			if w := simulation.world[cx][cy]; w != nil {
-				renderer.SetDrawColor(0, 200, 0, 255)
+				r, g, b := genomeColor(w.genome)
+				renderer.SetDrawColor(r, g, b, 255)
 				renderer.FillRect(&sdl.Rect{X: x + 1, Y: y + 1, W: cellSize - 1, H: cellSize - 1})
 			}
 		}
