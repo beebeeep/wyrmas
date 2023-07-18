@@ -61,9 +61,9 @@ func (s *Simulation) createSelectionArea() {
 	for x := range s.selectionArea {
 		for y := range s.selectionArea[x] {
 			// survive on border
-			if x >= sx/8 && x <= sx*7/8 && y >= sy/8 && y <= sy*7/8 {
-				continue
-			}
+			//if x >= sx/8 && x <= sx*7/8 && y >= sy/8 && y <= sy*7/8 {
+			//	continue
+			//}
 
 			//	checker patter
 			//if x%20 < 15 && y%20 < 15 {
@@ -71,9 +71,9 @@ func (s *Simulation) createSelectionArea() {
 			//}
 
 			//survive in middle
-			//if !(x >= sx*3/8 && x < sx*5/8 && y >= sy*3/8 && y < sy*5/8) {
-			//	continue
-			//}
+			if !(x >= sx*3/8 && x < sx*5/8 && y >= sy*3/8 && y < sy*5/8) {
+				continue
+			}
 
 			s.selectionArea[x][y] = true
 		}
@@ -173,6 +173,9 @@ func (s *Simulation) repopulate() {
 				break
 			}
 		}
+		sort.Slice(genome, func(i, j int) bool {
+			return genome[i] < genome[j]
+		})
 		s.wyrmas[i].x = x
 		s.wyrmas[i].y = y
 		s.wyrmas[i].direction[0] = Dist(rand.Intn(3) - 1)
@@ -199,9 +202,6 @@ func (s *Simulation) breed(wyrmas []*Wyrm, targetPopulation int) [][]Gene {
 				genome[i].mutate()
 			}
 		}
-		sort.Slice(genome, func(i, j int) bool {
-			return genome[i] < genome[j]
-		})
 		return genome
 	}
 

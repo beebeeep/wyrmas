@@ -56,9 +56,9 @@ func (g *Gene) mutate() {
 func genomeDiff(a, b []Gene) float64 {
 	diff := 0
 	for i := range a {
-		diff += bits.OnesCount(uint(a[i]) ^ uint(b[i]))
+		diff += bits.OnesCount((uint(a[i]) & 0xffff) ^ (uint(b[i] & 0xffff)))
 	}
-	return float64(diff) / float64(32*len(a))
+	return float64(diff) / float64(16*len(a))
 }
 
 func genomeHash(g []Gene) float64 {
@@ -67,7 +67,6 @@ func genomeHash(g []Gene) float64 {
 		_neutralGenome = _neutralGenome[:0]
 		for range g {
 			_neutralGenome = append(_neutralGenome, 0xaaaaaaaa)
-			//_neutralGenome = append(_neutralGenome, 0xaaaaaaaa)
 		}
 	}
 	return genomeDiff(g, _neutralGenome)
